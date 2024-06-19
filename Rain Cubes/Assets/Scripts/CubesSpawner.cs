@@ -8,16 +8,16 @@ public class CubesSpawner : MonoBehaviour
     [SerializeField] private int _maxSize = 20;
     [SerializeField] private float _spawnDelay = 0.3f;
 
-    private ObjectPool<GameObject> _pool;
+    private ObjectPool<Cube> _pool;
     private bool _isWork = true;
 
     private void Awake()
     {
-        _pool = new ObjectPool<GameObject>(
-            createFunc: () => Instantiate(_prefab.gameObject),
-            actionOnGet: (obj) => ActionOnGet(obj),
-            actionOnRelease: (obj) => obj.SetActive(false),
-            actionOnDestroy: (obj) => Destroy(obj),
+        _pool = new ObjectPool<Cube>(
+            createFunc: () => Instantiate(_prefab),
+            actionOnGet: OnGet,
+            actionOnRelease: OnRelease,
+            actionOnDestroy: Destroy,
             collectionCheck: true,
             maxSize: _maxSize);
     }
@@ -27,19 +27,9 @@ public class CubesSpawner : MonoBehaviour
         StartCoroutine(Spawn(_spawnDelay));
     }
 
-    private void OnEnable()
-    {
-        Cube.DeactivatingCube += DeactivateCube;
-    }
-
-    private void OnDisable()
-    {
-        Cube.DeactivatingCube -= DeactivateCube;
-    }
-
     public void DeactivateCube(Cube cube)
     {
-        _pool.Release(cube.gameObject);
+        _pool.Release(cube);
     }
 
     private IEnumerator Spawn(float delay)
@@ -53,7 +43,7 @@ public class CubesSpawner : MonoBehaviour
         }
     }
 
-    private void ActionOnGet(GameObject obj)
+    private void OnGet(Cube obj)
     {
         obj.transform.position = GetRandomSpawnPosition();
 
@@ -62,12 +52,19 @@ public class CubesSpawner : MonoBehaviour
             cube.ResetState();
         }
 
-        obj.SetActive(true);
+        obj.gameObject.SetActive(true);
+    }
+
+    private void OnRelease(Cube cube)
+    {
+        cube.gameObject.SetActive(false);
+        cube.DeactivatingCube -= DeactivateCube;
     }
 
     private void GetCube()
     {
-        _pool.Get();
+        _pool.Get(out Cube cube);
+        cube.DeactivatingCube += DeactivateCube;
     }
 
     private Vector3 GetRandomSpawnPosition()

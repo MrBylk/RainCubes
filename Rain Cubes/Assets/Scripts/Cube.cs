@@ -5,10 +5,11 @@ using UnityEngine.Events;
 [RequireComponent(typeof(Renderer))]
 public class Cube : MonoBehaviour
 {
-    public static event UnityAction<Cube> DeactivatingCube;
     private Renderer _renderer;
-    private bool _isChangedColor = false;
+    private bool _isCollided = false;
     private Color _defaultColor;
+
+    public event UnityAction<Cube> DeactivatingCube;
 
     private void Awake()
     {
@@ -27,19 +28,18 @@ public class Cube : MonoBehaviour
 
     public void ResetState()
     {
-        _isChangedColor = false;
+        _isCollided = false;
         _renderer.material.color = _defaultColor;
     }
 
     private void StartLifeTimer()
     {
-        if (_isChangedColor == false)
+        if (_isCollided == false)
         {
-            GetComponent<Renderer>().material.color = Random.ColorHSV();
-            _isChangedColor = true;
+            _renderer.material.color = Random.ColorHSV();
+            StartCoroutine(nameof(TimeToDestroyCube));
+            _isCollided = true;
         }
-
-        StartCoroutine(nameof(TimeToDestroyCube));
     }
 
     private IEnumerator TimeToDestroyCube()
